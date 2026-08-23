@@ -108,7 +108,6 @@ questions:
   expect_sources: {must_cite: [contract_northstar], must_not_cite: [policy_v2]}
   judge_rubric: "States no fee applies, explicitly says the Northstar agreement overrode the general SOP, and surfaces the KI-211 caveat that a SwiftShip parcel may already be collected while still showing BOOKED — noting this would change the answer to return-to-origin."
   unverified: true
-  blocked_on: [A2]
 
 - id: g06_northstar_p1_override
   category: contract_override
@@ -262,7 +261,6 @@ questions:
     min_tool_calls: 3
   expect_verdict: {rule: cancellation_fee, outcome: no_fee, amount_inr: 0, override_applied: true}
   unverified: true
-  blocked_on: [A2]
 
 - id: g18_tkt501_sla_breach
   category: multi_hop
