@@ -1,0 +1,20 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+psycopg[binary,pool]==3.2.3
+
+# Ingestion
+pdfplumber==0.11.5
+openpyxl==3.1.5
+PyYAML==6.0.2
+tiktoken==0.8.0
+
+# LLM providers: Cerebras is OpenAI-compatible, Gemini has its own SDK.
+openai==1.59.6
+google-genai==0.8.0
+
+# Tests
+pytest==8.3.4
+httpx==0.28.1
+fpdf2==2.8.2

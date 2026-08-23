@@ -1,0 +1,54 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: parcelpilot
+      POSTGRES_PASSWORD: parcelpilot
+      POSTGRES_DB: parcelpilot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U parcelpilot -d parcelpilot"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://parcelpilot:parcelpilot@db:5432/parcelpilot
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./data:/data:ro
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # `docker compose run --rm setup` -> migrate + ingest in one shot.
+  # Not started by `up`; it is a one-off task, not a service.
+  setup:
+    build:
+      context: ./backend
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://parcelpilot:parcelpilot@db:5432/parcelpilot
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - ./data:/data:ro
+    command: python -m scripts.setup
+
+volumes:
+  pgdata:
