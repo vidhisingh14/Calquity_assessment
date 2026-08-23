@@ -23,7 +23,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="brand">ParcelPilot Support</div>
+        <div className="brand">
+          <span className="brand-mark">ParcelPilot</span>
+          <span className="brand-kicker">Support Dispatch</span>
+        </div>
 
         {/* The role switcher: this is how access control gets demonstrated
             in one click, per the build spec's video requirement. */}
@@ -48,10 +51,10 @@ export default function App() {
         {isInternal && (
           <nav className="tabs">
             <button className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}>
-              Chat
+              Console
             </button>
             <button className={tab === "signals" ? "active" : ""} onClick={() => setTab("signals")}>
-              Signals
+              Board
             </button>
           </nav>
         )}

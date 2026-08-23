@@ -20,20 +20,21 @@ export function SignalsBoard({
       .catch((e) => setError(String(e)));
   }, [userId]);
 
-  if (error) return <div className="signals-error">{error}</div>;
-  if (!signals) return <div className="signals-loading">Loading signals…</div>;
-
-  const grouped = SEVERITY_ORDER.map((sev) => ({
-    severity: sev,
-    items: signals.filter((s) => s.severity === sev),
-  })).filter((g) => g.items.length > 0);
-
-  if (grouped.length === 0) {
-    return <div className="signals-empty">No open signals right now.</div>;
-  }
+  const grouped = signals
+    ? SEVERITY_ORDER.map((sev) => ({
+        severity: sev,
+        items: signals.filter((s) => s.severity === sev),
+      })).filter((g) => g.items.length > 0)
+    : [];
 
   return (
     <div className="signals-board">
+      <div className="board-eyebrow">Dispatch Board</div>
+      {error && <div className="signals-error">Board unavailable — {error}</div>}
+      {!error && !signals && <div className="signals-loading">Reading the board…</div>}
+      {!error && signals && grouped.length === 0 && (
+        <div className="signals-empty">Nothing open. The board is clear.</div>
+      )}
       {grouped.map((g) => (
         <div key={g.severity} className={`signal-group sev-${g.severity}`}>
           <div className="signal-group-header">{g.severity.toUpperCase()}</div>

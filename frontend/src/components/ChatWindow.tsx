@@ -6,10 +6,14 @@ import { ConfirmationCard } from "./ConfirmationCard";
 import { ExcludedSourceLine, SourceCard } from "./SourceCard";
 import { ToolTimeline } from "./ToolTimeline";
 
+// The signature element: a customs-clearance stamp standing in for the
+// validator's derived confidence. CLEARED / REVIEW / HOLD reads as freight
+// paperwork and names the real mechanism -- whether a human should look at
+// this -- more plainly than a generic "confidence" pill would.
 const CONFIDENCE_LABEL: Record<string, string> = {
-  high: "High confidence",
-  medium: "Medium confidence",
-  low: "Low confidence",
+  high: "Cleared",
+  medium: "Review",
+  low: "Hold",
 };
 
 function AssistantTurn({
@@ -25,7 +29,9 @@ function AssistantTurn({
   onActionResolved: () => void;
   onActionShown: () => void;
 }) {
-  const [resolved, setResolved] = useState<string | null>(null);
+  const [resolved, setResolved] = useState<{ text: string; status: "confirmed" | "declined" } | null>(
+    null,
+  );
   const envelope = turn.envelope;
 
   useEffect(() => {
@@ -43,7 +49,7 @@ function AssistantTurn({
       </div>
 
       {envelope.escalation_offered && !envelope.pending_action && (
-        <div className="escalation-hint">This can be escalated to a human specialist.</div>
+        <div className="escalation-hint">Flagged for a specialist to pick up.</div>
       )}
 
       <ToolTimeline steps={envelope.steps} />
@@ -66,14 +72,16 @@ function AssistantTurn({
           onResolved={(r) => {
             setResolved(
               r.status === "confirmed"
-                ? `Escalation ${r.escalation_id} confirmed.`
-                : "Escalation rejected.",
+                ? { text: `Authorized — escalation ${r.escalation_id} created.`, status: "confirmed" }
+                : { text: "Declined — no escalation created.", status: "declined" },
             );
             onActionResolved();
           }}
         />
       )}
-      {resolved && <div className="resolution-note">{resolved}</div>}
+      {resolved && (
+        <div className={`resolution-note ${resolved.status}`}>{resolved.text}</div>
+      )}
     </div>
   );
 }
@@ -151,9 +159,9 @@ export function ChatWindow({
               ? "Resolve the pending escalation to continue…"
               : `Ask as ${currentUser.display_name}…`
           }
-          disabled={sending}
+          disabled={sending || composerLocked}
         />
-        <button onClick={submit} disabled={sending || !draft.trim()}>
+        <button onClick={submit} disabled={sending || composerLocked || !draft.trim()}>
           Send
         </button>
       </div>

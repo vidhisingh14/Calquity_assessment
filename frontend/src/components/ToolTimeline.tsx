@@ -1,10 +1,12 @@
 import type { Step } from "../api/client";
 
+// Short, terse, uppercase by CSS -- these read as scan-event codes
+// ("ARRIVED AT FACILITY") rather than sentence fragments.
 const TOOL_LABELS: Record<string, string> = {
-  lookup_records: "Looking up records",
-  search_documents: "Searching documents",
-  evaluate_policy: "Evaluating policy",
-  create_escalation: "Preparing escalation",
+  lookup_records: "Record lookup",
+  search_documents: "Document search",
+  evaluate_policy: "Policy check",
+  create_escalation: "Escalation draft",
 };
 
 export function ToolTimeline({ steps }: { steps: Step[] }) {

@@ -33,7 +33,7 @@ export function ConfirmationCard({ userId, action, onResolved }: Props) {
 
   return (
     <div className="confirmation-card">
-      <div className="confirmation-header">Escalation awaiting confirmation</div>
+      <div className="confirmation-header">Escalation — awaiting authorization</div>
       <dl className="confirmation-fields">
         <dt>Summary</dt>
         <dd>{String(preview.summary ?? "")}</dd>
@@ -55,7 +55,7 @@ export function ConfirmationCard({ userId, action, onResolved }: Props) {
         )}
       </dl>
       <div className="confirmation-note">
-        Nothing has been created yet. Expires in {action.expires_in_minutes} minutes.
+        Nothing is created until you confirm. This draft expires in {action.expires_in_minutes} minutes.
       </div>
       <div className="confirmation-buttons">
         <button className="confirm-btn" disabled={busy} onClick={confirm}>
