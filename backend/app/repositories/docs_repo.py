@@ -1,10 +1,28 @@
 """Document and chunk reads: vector search, keyword search, metadata.
 
-Scope filtering happens IN SQL, never as a post-filter in Python. The rule from
-the build spec's section 8.2 is `WHERE account_scope IS NULL OR account_scope =
-:scope`, and it is applied inside every query below. Retrieving everything and
-filtering afterwards means the rows briefly existed in a variable the prompt
-could reach; filtering in SQL means they never left the database.
+Scope filtering happens IN SQL, never as a post-filter in Python. Retrieving
+everything and filtering afterwards means the rows briefly existed in a
+variable the prompt could reach; filtering in SQL means they never left the
+database.
+
+THE SCOPE CLAUSE HAS THREE ARMS, NOT TWO.
+
+The build spec's section 8.2 gives it as `WHERE account_scope IS NULL OR
+account_scope = :scope`. That is correct for a customer but WRONG for internal
+staff, and the bug is silent. AuthContext defines a NULL scope as
+*unrestricted*, but under the two-arm clause `account_scope = NULL` is never
+true, so a NULL scope matches only unscoped documents -- meaning support agents
+and ops leads could never retrieve ANY contract.
+
+Nothing errors. The contract simply never appears, and the answer falls back to
+general policy while sounding just as confident. So:
+
+    (%(scope)s::text IS NULL          -- unrestricted (internal roles)
+     OR c.account_scope IS NULL       -- document applies to everyone
+     OR c.account_scope = %(scope)s)  -- document belongs to this caller
+
+A customer still sees exactly `unscoped + their own`, so the leak guarantee is
+unchanged. test_internal_role_can_retrieve_contracts pins this.
 """
 
 from __future__ import annotations
@@ -34,7 +52,9 @@ def vector_search(
             FROM doc_chunks c
             JOIN documents d ON d.doc_id = c.doc_id
             WHERE c.authority_tier = ANY(%(tiers)s)
-              AND (c.account_scope IS NULL OR c.account_scope = %(scope)s)
+              AND (%(scope)s::text IS NULL
+                   OR c.account_scope IS NULL
+                   OR c.account_scope = %(scope)s)
               AND c.embedding IS NOT NULL
             ORDER BY c.embedding <=> %(embedding)s::vector
             LIMIT %(k)s
@@ -57,7 +77,9 @@ def keyword_search(
             FROM doc_chunks c
             JOIN documents d ON d.doc_id = c.doc_id
             WHERE c.authority_tier = ANY(%(tiers)s)
-              AND (c.account_scope IS NULL OR c.account_scope = %(scope)s)
+              AND (%(scope)s::text IS NULL
+                   OR c.account_scope IS NULL
+                   OR c.account_scope = %(scope)s)
               AND c.content_tsv @@ websearch_to_tsquery('english', %(q)s)
             ORDER BY rank DESC
             LIMIT %(k)s
@@ -107,7 +129,9 @@ def get_chunk(chunk_id: int, account_scope: str | None) -> dict[str, Any] | None
             FROM doc_chunks c
             JOIN documents d ON d.doc_id = c.doc_id
             WHERE c.chunk_id = %(chunk_id)s
-              AND (c.account_scope IS NULL OR c.account_scope = %(scope)s)
+              AND (%(scope)s::text IS NULL
+                   OR c.account_scope IS NULL
+                   OR c.account_scope = %(scope)s)
             """,
             {"chunk_id": chunk_id, "scope": account_scope},
         ).fetchone()

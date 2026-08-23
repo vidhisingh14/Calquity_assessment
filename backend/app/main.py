@@ -12,7 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import routes_health
+from app.api import routes_actions, routes_chat, routes_health, routes_signals
 from app.config import get_settings
 from app.errors import (
     AuthResolutionError,
@@ -37,6 +37,9 @@ app.add_middleware(
 )
 
 app.include_router(routes_health.router)
+app.include_router(routes_chat.router)
+app.include_router(routes_actions.router)
+app.include_router(routes_signals.router)
 
 
 @app.on_event("startup")

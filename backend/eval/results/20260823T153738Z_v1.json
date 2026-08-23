@@ -1,0 +1,28 @@
+{
+  "prompt_version": "v1",
+  "run_at": "20260823T153738Z",
+  "verified_rate": "0/1",
+  "unverified_rate": "0/0",
+  "blocking_rate": "0/0",
+  "blocking_failures": [],
+  "results": [
+    {
+      "id": "g03_delivered_cannot_cancel",
+      "category": "policy_basic",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "execution",
+          "pass": false,
+          "detail": "GEMINI_API_KEY is not set"
+        }
+      ],
+      "tool_sequence": [],
+      "answer": "",
+      "seconds": 0.0
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "prompt_version": "v1",
+  "run_at": "20260823T153906Z",
+  "verified_rate": "0/1",
+  "unverified_rate": "0/0",
+  "blocking_rate": "0/0",
+  "blocking_failures": [],
+  "results": [
+    {
+      "id": "g03_delivered_cannot_cancel",
+      "category": "policy_basic",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "sources",
+          "pass": false,
+          "detail": "must_cite sop_v4 not in sources []"
+        },
+        {
+          "name": "judge",
+          "pass": false,
+          "detail": "The answer provided is an error message stating the model was unavailable, rather than addressing the user's question or stating that a delivered order cannot be cancelled."
+        }
+      ],
+      "tool_sequence": [],
+      "answer": "I could not complete that request because the language model was unavailable. Please try again.",
+      "seconds": 40.11
+    }
+  ]
+}

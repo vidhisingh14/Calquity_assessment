@@ -22,6 +22,7 @@ comment does not survive the next person adding a parameter.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -41,6 +42,12 @@ class ChatResponse:
     content: str | None = None
     tool_calls: list[ToolCall] = field(default_factory=list)
     raw: Any = None
+    # The provider's OWN representation of this assistant turn, kept verbatim.
+    # Gemini 3.x requires the `thought_signature` on function-call parts to be
+    # echoed back on the next request; rebuilding the turn from a normalised
+    # dict silently drops it and the follow-up request 400s mid-chain. So the
+    # original object is carried through and replayed unchanged.
+    provider_content: Any = None
 
     @property
     def has_tool_calls(self) -> bool:
@@ -132,17 +139,14 @@ class GeminiChatClient:
         from google import genai
         from google.genai import types
 
+        from app.llm import gemini_compat
+
         client = genai.Client(api_key=self.api_key)
 
-        system = "\n".join(m["content"] for m in messages if m.get("role") == "system")
-        contents = [
-            types.Content(
-                role="user" if m["role"] == "user" else "model",
-                parts=[types.Part(text=str(m.get("content") or ""))],
-            )
-            for m in messages
-            if m.get("role") in ("user", "assistant")
-        ]
+        # Tool calls and tool RESULTS travel as parts in Gemini, not as separate
+        # roles. Filtering by role drops the model's own tool output, after
+        # which it either repeats the call forever or answers from nothing.
+        system, contents = gemini_compat.to_contents(messages, types)
 
         config: dict[str, Any] = {"temperature": temperature}
         if system:
@@ -151,27 +155,63 @@ class GeminiChatClient:
             config["response_mime_type"] = "application/json"
             schema = (response_format.get("json_schema") or {}).get("schema")
             if schema:
-                config["response_schema"] = schema
+                config["response_schema"] = gemini_compat.sanitise_schema(dict(schema))
         if tools:
-            config["tools"] = [types.Tool(function_declarations=[
-                t["function"] for t in tools
-            ])]
+            # Pydantic emits additionalProperties and anyOf, both of which
+            # Gemini's function-declaration parser rejects with a 400.
+            config["tools"] = [types.Tool(
+                function_declarations=gemini_compat.to_function_declarations(tools)
+            )]
 
-        try:
-            resp = client.models.generate_content(
-                model=self.model,
-                contents=contents,
-                config=types.GenerateContentConfig(**config),
-            )
-        except Exception as exc:  # noqa: BLE001
-            raise LLMError(f"Gemini request failed: {exc}") from exc
+        # Free-tier limits are per MINUTE, and one agent turn costs 4-6 calls,
+        # so a burst of turns trips 429 long before any daily cap. Retrying with
+        # backoff is what makes the agent usable on a free key at all; without
+        # it the loop reports "model unavailable" for a limit that clears in
+        # seconds.
+        resp = None
+        last_exc: Exception | None = None
+        for attempt in range(5):
+            try:
+                resp = client.models.generate_content(
+                    model=self.model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(**config),
+                )
+                break
+            except Exception as exc:  # noqa: BLE001
+                last_exc = exc
+                if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
+                    time.sleep(2 ** attempt + 1)
+                    continue
+                raise LLMError(f"Gemini request failed: {exc}") from exc
+        if resp is None:
+            raise LLMError(
+                f"Gemini rate limit not cleared after retries: {last_exc}"
+            ) from last_exc
 
         calls: list[ToolCall] = []
-        for fc in (resp.function_calls or []):
-            calls.append(ToolCall(id=fc.id or fc.name, name=fc.name,
-                                  arguments=dict(fc.args or {})))
+        for index, fc in enumerate(resp.function_calls or []):
+            # Gemini identifies calls by name; an id is synthesised so the agent
+            # loop's id-based bookkeeping works unchanged.
+            calls.append(ToolCall(
+                id=f"{fc.name}-{index}",
+                name=fc.name,
+                arguments=dict(fc.args or {}),
+            ))
 
-        return ChatResponse(content=resp.text, tool_calls=calls, raw=resp)
+        text = None
+        try:
+            text = resp.text
+        except Exception:  # noqa: BLE001 - a pure tool-call turn carries no text
+            text = None
+
+        provider_content = None
+        if resp.candidates:
+            provider_content = resp.candidates[0].content
+
+        return ChatResponse(content=text, tool_calls=calls, raw=resp,
+                            provider_content=provider_content)
+
 
 
 def get_chat_client() -> ChatClient:

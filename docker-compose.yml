@@ -21,10 +21,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://parcelpilot:parcelpilot@db:5432/parcelpilot
     env_file:
       - .env
+    environment:
+      # Explicit `environment:` beats `env_file:` for the same key. .env sets
+      # DATA_DIR=./data for host-side scripts; inside the container the data
+      # pack is mounted at /data, so this pin is required, not redundant.
+      DATABASE_URL: postgresql://parcelpilot:parcelpilot@db:5432/parcelpilot
+      DATA_DIR: /data
     ports:
       - "8000:8000"
     volumes:
@@ -41,14 +45,23 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://parcelpilot:parcelpilot@db:5432/parcelpilot
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql://parcelpilot:parcelpilot@db:5432/parcelpilot
+      DATA_DIR: /data
     volumes:
       - ./backend:/app
       - ./data:/data:ro
     command: python -m scripts.setup
+
+  web:
+    build:
+      context: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "5173:4173"
 
 volumes:
   pgdata:

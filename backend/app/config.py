@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://parcelpilot:parcelpilot@localhost:5432/parcelpilot"
 
     # --- Chat: the agent loop ---------------------------------------------
-    chat_provider: Literal["cerebras", "gemini"] = "cerebras"
-    chat_model: str = "gpt-oss-120b"
+    chat_provider: Literal["cerebras", "gemini"] = "gemini"
+    chat_model: str = "gemini-3.6-flash"
     cerebras_api_key: str = ""
     cerebras_base_url: str = "https://api.cerebras.ai/v1"
 
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # --- Judge / signal naming --------------------------------------------
     judge_provider: Literal["gemini", "cerebras"] = "gemini"
-    judge_model: str = "gemini-2.0-flash"
+    judge_model: str = "gemini-3.1-flash-lite"
 
     # --- Agent behaviour ---------------------------------------------------
     max_agent_steps: int = 8

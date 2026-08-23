@@ -188,3 +188,61 @@ def test_internal_role_may_read_across_accounts(ops_lead):
 
 def test_customer_may_not_read_across_accounts(customer_lumen):
     assert policies.can_read_all_accounts(customer_lumen) is False
+
+
+# --------------------------------------------------------------------------
+# Regression: the scope clause needs three arms, not two
+# --------------------------------------------------------------------------
+
+def test_internal_role_can_retrieve_contracts(ops_lead):
+    """A NULL scope means UNRESTRICTED, not 'unscoped documents only'.
+
+    The build spec's two-arm clause (`account_scope IS NULL OR account_scope =
+    :scope`) silently excluded every contract from internal staff, because
+    `account_scope = NULL` is never true. Nothing errored -- the contract just
+    never appeared and the answer fell back to general policy.
+
+    Four golden questions depend on this working: g12, g18, g28 and g29.
+    """
+    assert ops_lead.account_scope_filter() is None
+
+    results = docs_repo.keyword_search(
+        query="cancellation fee regardless how long booked",
+        tiers=policies.visible_doc_tiers(ops_lead),
+        account_scope=None,
+        k=20,
+    )
+    assert "contract_northstar" in {r["doc_id"] for r in results}
+
+
+def test_internal_role_sees_both_contracts(ops_lead):
+    """Note websearch_to_tsquery ANDs its terms, so each contract is probed
+    with wording that actually appears in it."""
+    tiers = policies.visible_doc_tiers(ops_lead)
+
+    northstar = docs_repo.keyword_search(
+        query="cancellation fee", tiers=tiers, account_scope=None, k=50
+    )
+    lumen = docs_repo.keyword_search(
+        query="service credit", tiers=tiers, account_scope=None, k=50
+    )
+
+    assert "contract_northstar" in {r["doc_id"] for r in northstar}
+    assert "contract_lumenworks" in {r["doc_id"] for r in lumen}
+
+
+def test_unrestricted_scope_does_not_leak_to_customers(customer_lumen):
+    """The fix must widen ONLY the unrestricted case.
+
+    A customer still sees exactly `unscoped + their own`, never another
+    account's contract.
+    """
+    results = docs_repo.keyword_search(
+        query="cancellation fee",
+        tiers=policies.visible_doc_tiers(customer_lumen),
+        account_scope=customer_lumen.account_scope_filter(),
+        k=50,
+    )
+    doc_ids = {r["doc_id"] for r in results}
+    assert "contract_northstar" not in doc_ids
+    assert all(r["account_scope"] in (None, "ACCT-002") for r in results)

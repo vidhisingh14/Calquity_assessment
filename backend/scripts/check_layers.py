@@ -12,6 +12,20 @@ The allowed direction is strictly downward:
     tools  ->  services, repositories, auth (read-only checks)
     services  ->  repositories
     repositories  ->  db
+
+ONE DELIBERATE CARVE-OUT, stated rather than smuggled.
+
+The build spec says "tools may not call the LLM". Taken literally that also
+forbids `app.llm.embeddings`, which `search_documents` needs to vectorise a
+query. The rule's PURPOSE is that tools must not REASON -- a tool that asks a
+model what to do has become an agent, and the layer boundary stops meaning
+anything. An embedding is deterministic vectorisation: the same text always
+produces the same vector, and no decision is delegated. It is a retrieval
+primitive, closer to a database index than to inference.
+
+So the check targets `app.llm.client` (the chat model) in tools/ and services/,
+and permits `app.llm.embeddings`. If a tool ever imports the chat client, that
+IS the failure the original rule was written to catch, and it still fails.
 """
 
 from __future__ import annotations
@@ -57,8 +71,13 @@ RULES: list[tuple[str, str, str]] = [
     ),
     (
         "tools",
-        r"from app\.llm|import app\.llm",
-        "tools must never call the LLM",
+        r"from app\.llm\.client|from app\.llm import client",
+        "tools must never call the CHAT model -- tools do not reason",
+    ),
+    (
+        "services",
+        r"from app\.llm\.client|from app\.llm import client",
+        "services must never call the CHAT model -- business rules are code",
     ),
 ]
 

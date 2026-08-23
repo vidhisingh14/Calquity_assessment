@@ -1,0 +1,227 @@
+{
+  "prompt_version": "v1",
+  "run_at": "20260823T154141Z",
+  "verified_rate": "0/8",
+  "unverified_rate": "0/0",
+  "blocking_rate": "0/0",
+  "blocking_failures": [],
+  "results": [
+    {
+      "id": "g01_standard_p3_target",
+      "category": "policy_basic",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "sources",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "behaviour",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "judge",
+          "pass": false,
+          "detail": "The answer failed to provide the required information regarding the 2 business day response target for a Standard-plan P3 and instead provided an error message."
+        }
+      ],
+      "tool_sequence": [
+        "lookup_records",
+        "search_documents"
+      ],
+      "answer": "I could not complete that request because the language model was unavailable. Please try again.",
+      "seconds": 11.55
+    },
+    {
+      "id": "g02_enterprise_p1_target",
+      "category": "policy_basic",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "execution",
+          "pass": false,
+          "detail": "No seeded user for ('customer', 'ACCT-004') in g02_enterprise_p1_target"
+        }
+      ],
+      "tool_sequence": [],
+      "answer": "",
+      "seconds": 0.0
+    },
+    {
+      "id": "g03_delivered_cannot_cancel",
+      "category": "policy_basic",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "sources",
+          "pass": false,
+          "detail": "must_cite sop_v4 not in sources []"
+        },
+        {
+          "name": "judge",
+          "pass": false,
+          "detail": "The answer provided is an error message stating the model was unavailable, rather than addressing the user's question or stating that a delivered order cannot be cancelled."
+        }
+      ],
+      "tool_sequence": [],
+      "answer": "I could not complete that request because the language model was unavailable. Please try again.",
+      "seconds": 3.21
+    },
+    {
+      "id": "g04_bulk_upload_limit",
+      "category": "policy_basic",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "sources",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "judge",
+          "pass": false,
+          "detail": "The answer failed to provide any information regarding the bulk upload feature, row limits, or the known technical workaround, instead providing an error message indicating the model was unavailable."
+        }
+      ],
+      "tool_sequence": [
+        "lookup_records",
+        "search_documents"
+      ],
+      "answer": "I could not complete that request because the language model was unavailable. Please try again.",
+      "seconds": 10.59
+    },
+    {
+      "id": "g05_northstar_cancel_fee",
+      "category": "contract_override",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "verdict",
+          "pass": false,
+          "detail": "no verdict was produced"
+        },
+        {
+          "name": "sources",
+          "pass": false,
+          "detail": "must_cite contract_northstar not in sources []"
+        },
+        {
+          "name": "judge",
+          "pass": false,
+          "detail": "The provided answer failed to address the question entirely, citing a technical error instead of providing the required information regarding the Northstar agreement, the SOP override, and the KI-211 caveat."
+        }
+      ],
+      "tool_sequence": [],
+      "answer": "I could not complete that request because the language model was unavailable. Please try again.",
+      "seconds": 23.37
+    },
+    {
+      "id": "g06_northstar_p1_override",
+      "category": "contract_override",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "sources",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "judge",
+          "pass": false,
+          "detail": "The answer provided is an error message indicating the model was unavailable, rather than providing the required information regarding the 15-minute 24x7 target and the contract replacement caveat."
+        }
+      ],
+      "tool_sequence": [
+        "search_documents",
+        "lookup_records"
+      ],
+      "answer": "I could not complete that request because the language model was unavailable. Please try again.",
+      "seconds": 6.78
+    },
+    {
+      "id": "g07_lumenworks_3h_no_credit",
+      "category": "contract_override",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "verdict",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "sources",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "answer_substrings",
+          "pass": false,
+          "detail": "must_not_contain 'INR 300' but it appears in the answer"
+        },
+        {
+          "name": "judge",
+          "pass": true,
+          "detail": "The answer correctly identifies that the LumenWorks agreement sets a 4-hour threshold, explicitly mentions that this overrides the default SOP threshold of 2 hours, and correctly concludes that a 3-hour delay does not qualify."
+        }
+      ],
+      "tool_sequence": [
+        "search_documents",
+        "evaluate_policy",
+        "evaluate_policy"
+      ],
+      "answer": "**No, you are not eligible for a service credit.**\n\n### Reason\nUnder your signed agreement, **ParcelPilot - LumenWorks Service Agreement** (`contract_lumenworks`, Section 3), a service credit is granted only if the pickup is **more than 4 hours** past the end of the scheduled pickup window (where the carrier is at fault and there is no customer-caused issue). Because the delay was 3 hours, it does not exceed the 4-hour requirement.\n\n### Governing Source\n* **`contract_lumenworks` (Section 3: Failed-pickup credits)**: Explicitly overrides the default standard policy threshold (which is 2 hours under `sop_v4`, Section 2) and sets the threshold for LumenWorks at more than 4 hours for a fixed INR 300 credit.",
+      "seconds": 15.84
+    },
+    {
+      "id": "g08_northstar_3h_credit_defers_to_sop",
+      "category": "contract_override",
+      "unverified": false,
+      "blocking": false,
+      "programmatic_pass": false,
+      "overall_pass": false,
+      "checks": [
+        {
+          "name": "verdict",
+          "pass": false,
+          "detail": "no verdict was produced"
+        },
+        {
+          "name": "sources",
+          "pass": false,
+          "detail": "must_cite sop_v4 not in sources []"
+        },
+        {
+          "name": "judge",
+          "pass": false,
+          "detail": "The answer failed to provide any information regarding the Northstar agreement, the SOP, or the calculation formula, instead providing an error message."
+        }
+      ],
+      "tool_sequence": [],
+      "answer": "I could not complete that request because the language model was unavailable. Please try again.",
+      "seconds": 37.85
+    }
+  ]
+}
