@@ -43,6 +43,21 @@ class ValidationResult:
         self.flags.append({"check": name, "detail": detail, "severity": severity})
 
 
+_DOC_ID_PATTERN = re.compile(r"\b(?:policy_v\d|sop_v\d|product_guide|contract_\w+)\b")
+
+
+def mentioned_doc_ids(answer: str) -> set[str]:
+    """doc_ids the answer text actually names.
+
+    Shared with services/chat.py, which uses this to mark which retrieved
+    sources were CITED versus merely CONSULTED -- search_documents can return
+    up to RETRIEVAL_K chunks on a single vague query, and showing all of them
+    as source cards regardless of whether the answer used them overstates
+    what actually backs the answer.
+    """
+    return set(_DOC_ID_PATTERN.findall(answer or ""))
+
+
 def _normalise(raw: str) -> str:
     """Compare numbers by value, not by spelling: 09 == 9, 250.0 == 250."""
     cleaned = raw.replace(",", "")
@@ -103,8 +118,7 @@ def validate(
 
     # 3. Citation existence: every doc_id named in the answer must have been
     # returned by a tool this turn.
-    mentioned = set(re.findall(r"\b(?:policy_v\d|sop_v\d|product_guide|contract_\w+)\b",
-                               answer or ""))
+    mentioned = mentioned_doc_ids(answer)
     invented = mentioned - cited_docs
     if invented:
         result.flag("citation_existence",

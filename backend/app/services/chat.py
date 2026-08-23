@@ -21,6 +21,32 @@ def _account_name(ctx: AuthContext) -> str | None:
     return row["account_name"] if row else None
 
 
+def _tag_cited(
+    sources: list[dict[str, Any]], answer: str, verdicts: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Mark which retrieved sources actually back the answer.
+
+    search_documents can return up to RETRIEVAL_K chunks on one vague query
+    -- "can I cancel order", no order ID -- and the model may reasonably ask a
+    clarifying question rather than cite anything. Showing every retrieved
+    chunk as a source card regardless overstates what backs the answer; the
+    frontend uses this flag to render cited sources prominently and fold the
+    rest into a quieter "also consulted" line, the way excluded_sources
+    already works.
+
+    "Cited" is the union of two things, not just prose mentions: a
+    evaluate_policy verdict's governing_source is structurally what a computed
+    number came from even when the model's prose doesn't spell out the
+    literal doc_id string, so that would be wrongly hidden if only regex-on-
+    prose were checked.
+    """
+    mentioned = validator.mentioned_doc_ids(answer)
+    mentioned |= {v.get("governing_source") for v in verdicts if v.get("governing_source")}
+    for source in sources:
+        source["cited"] = source.get("doc_id") in mentioned
+    return sources
+
+
 def handle_turn(session_id: str, message: str, ctx: AuthContext) -> dict[str, Any]:
     started = time.perf_counter()
     snapshot = system_repo.get_snapshot_time()
@@ -53,11 +79,12 @@ def handle_turn(session_id: str, message: str, ctx: AuthContext) -> dict[str, An
         or any(v.get("outcome") == "undecidable" for v in turn.verdicts)
     )
 
+    answer_text = verdict.answer or turn.answer
     envelope = {
         "session_id": session_id,
-        "answer": verdict.answer or turn.answer,
+        "answer": answer_text,
         "confidence": verdict.confidence,
-        "sources": turn.sources,
+        "sources": _tag_cited(turn.sources, answer_text, turn.verdicts),
         "steps": [s.to_dict() for s in turn.steps],
         "conflicts": turn.conflicts,
         "excluded_sources": turn.excluded_sources,
@@ -123,11 +150,12 @@ def handle_turn_streaming(session_id: str, message: str, ctx: AuthContext):
             verdict.escalation_offered or turn.budget_exhausted
             or any(v.get("outcome") == "undecidable" for v in turn.verdicts)
         )
+        answer_text = verdict.answer or turn.answer
         envelope = {
             "session_id": session_id,
-            "answer": verdict.answer or turn.answer,
+            "answer": answer_text,
             "confidence": verdict.confidence,
-            "sources": turn.sources,
+            "sources": _tag_cited(turn.sources, answer_text, turn.verdicts),
             "steps": [s.to_dict() for s in turn.steps],
             "conflicts": turn.conflicts,
             "excluded_sources": turn.excluded_sources,

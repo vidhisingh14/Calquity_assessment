@@ -296,6 +296,12 @@ body {
   width: 100%;
 }
 .excluded-source em { color: var(--alert); font-style: normal; }
+.consulted-note {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--rail);
+  width: 100%;
+}
 
 /* --------------------------------------------------- authorization card - */
 

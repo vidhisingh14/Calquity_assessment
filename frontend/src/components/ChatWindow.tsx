@@ -54,16 +54,35 @@ function AssistantTurn({
 
       <ToolTimeline steps={envelope.steps} />
 
-      {envelope.sources.length > 0 && (
-        <div className="source-cards">
-          {envelope.sources.map((s, i) => (
-            <SourceCard key={i} source={s} />
-          ))}
-          {envelope.excluded_sources.map((e, i) => (
-            <ExcludedSourceLine key={i} {...e} />
-          ))}
-        </div>
-      )}
+      {(() => {
+        // search_documents can retrieve up to RETRIEVAL_K chunks on one vague
+        // question ("can I cancel order", no order ID) that the model never
+        // ends up drawing on -- a clarifying-question turn shouldn't stamp
+        // eight source cards as if they all backed the answer. Only sources
+        // actually named in the prose or a verdict's governing_source get the
+        // full stamp treatment; the rest fold into one quiet line, same
+        // pattern as excluded_sources below.
+        const cited = envelope.sources.filter((s) => s.cited);
+        const consulted = envelope.sources.filter((s) => !s.cited);
+        if (cited.length === 0 && consulted.length === 0 && envelope.excluded_sources.length === 0) {
+          return null;
+        }
+        return (
+          <div className="source-cards">
+            {cited.map((s, i) => (
+              <SourceCard key={i} source={s} />
+            ))}
+            {consulted.length > 0 && (
+              <div className="consulted-note">
+                Also consulted, not cited: {consulted.map((s) => s.doc_id).join(", ")}
+              </div>
+            )}
+            {envelope.excluded_sources.map((e, i) => (
+              <ExcludedSourceLine key={i} {...e} />
+            ))}
+          </div>
+        );
+      })()}
 
       {envelope.pending_action && !resolved && (
         <ConfirmationCard

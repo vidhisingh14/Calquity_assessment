@@ -13,6 +13,10 @@ export interface Source {
   page?: number | null;
   section?: string | null;
   score?: number;
+  // Actually named in the answer (prose mention or a verdict's governing
+  // source), vs. merely retrieved by search_documents. A vague question can
+  // retrieve up to RETRIEVAL_K chunks the answer never draws on.
+  cited?: boolean;
 }
 
 export interface Verdict {
