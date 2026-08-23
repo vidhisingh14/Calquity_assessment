@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Env & secrets
+.env
+.env.local
+*.key
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Eval output (results files are committed explicitly)
+eval/results/*.tmp
+
+# OS
+.DS_Store
+Thumbs.db

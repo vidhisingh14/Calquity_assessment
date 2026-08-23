@@ -1,0 +1,130 @@
+# ParcelPilot — declared policy terms (SOURCE OF TRUTH for evaluate_policy)
+#
+# Ingestion does NOT extract these values. It VERIFIES them: for each term it
+# locates the chunk whose text contains `source_quote` literally, binds that
+# chunk's id into doc_terms.source_chunk_id, and FAILS THE INGEST if the quote
+# is not found verbatim. A wrong quote here breaks the build; it can never
+# silently produce a wrong answer.
+#
+# The regex seeder (ingestion/seed_terms.py) only PROPOSES additions to this
+# file for human curation. It is never the primary path.
+#
+# unverified: true  -> drafted by the coding agent, not signed off by a human.
+#                      The eval reports verified and unverified scores separately.
+# Review table with full provenance: docs/review/terms-review.md
+
+version: 1
+snapshot_reference: "2026-08-16T11:00:00+05:30"
+
+terms:
+
+  # ---------- sop_v4 — Cancellation & Service Credit SOP v4 (tier 3) ----------
+  - {doc_id: sop_v4, term_key: cancellation.draft_fee_inr, value: 0, unit: INR,
+     source_quote: "DRAFT: May be cancelled with no fee.", unverified: true}
+  - {doc_id: sop_v4, term_key: cancellation.free_window_minutes, value: 30, unit: minutes,
+     source_quote: "No fee within 30 minutes of booking.", unverified: true}
+  - {doc_id: sop_v4, term_key: cancellation.fee_after_window_inr, value: 250, unit: INR,
+     source_quote: "After 30 minutes, charge INR 250 unless a customer agreement explicitly waives the cancellation fee.", unverified: true}
+  - {doc_id: sop_v4, term_key: cancellation.waivable_by_agreement, value: true, unit: bool,
+     source_quote: "unless a customer agreement explicitly waives the cancellation fee", unverified: true}
+  - {doc_id: sop_v4, term_key: cancellation.picked_up_allowed, value: false, unit: bool,
+     source_quote: "PICKED_UP: Do not cancel. Use the return-to-origin workflow if the customer wants the parcel returned.", unverified: true}
+  - {doc_id: sop_v4, term_key: cancellation.delivered_allowed, value: false, unit: bool,
+     source_quote: "DELIVERED: Cannot be cancelled.", unverified: true}
+  - {doc_id: sop_v4, term_key: service_credit.delay_threshold_hours, value: 2, unit: hours,
+     source_quote: "the pickup is more than 2 hours past the end of the scheduled pickup window", unverified: true}
+  - {doc_id: sop_v4, term_key: service_credit.requires_carrier_fault, value: true, unit: bool,
+     source_quote: "the carrier is at fault, and there is no customer-caused issue", unverified: true}
+  - {doc_id: sop_v4, term_key: service_credit.requires_no_customer_fault, value: true, unit: bool,
+     source_quote: "there is no customer-caused issue", unverified: true}
+  - {doc_id: sop_v4, term_key: service_credit.amount_cap_inr, value: 500, unit: INR,
+     source_quote: "The default credit is the lower of INR 500 or 10% of the shipment fee.", unverified: true}
+  - {doc_id: sop_v4, term_key: service_credit.amount_pct_of_fee, value: 10, unit: percent,
+     source_quote: "The default credit is the lower of INR 500 or 10% of the shipment fee.", unverified: true}
+  - {doc_id: sop_v4, term_key: service_credit.manager_approval_above_inr, value: 1000, unit: INR,
+     source_quote: "Any individual credit above INR 1,000 requires manager approval.", unverified: true}
+  - {doc_id: sop_v4, term_key: service_credit.undecidable_when_facts_unknown, value: true, unit: bool,
+     source_quote: "Do not promise a credit when carrier fault, pickup timing, or customer fault is unknown.", unverified: true}
+
+  # ---------- policy_v3 — Support Policy v3, CURRENT (tier 2) ----------
+  # NOTE: rows below are read off a flattened table row. The severity-to-column
+  # mapping is INFERRED from layout, not stated in the text. Highest-risk block.
+  - {doc_id: policy_v3, term_key: sla.first_response.Enterprise.P1, value: 30, unit: minutes, coverage: "24x7",
+     source_quote: "Enterprise 30 minutes, 24x7 2 hours 1 business day", unverified: true}
+  - {doc_id: policy_v3, term_key: sla.first_response.Enterprise.P2, value: 2, unit: hours,
+     source_quote: "Enterprise 30 minutes, 24x7 2 hours 1 business day", unverified: true}
+  - {doc_id: policy_v3, term_key: sla.first_response.Enterprise.P3, value: 1, unit: business_days,
+     source_quote: "Enterprise 30 minutes, 24x7 2 hours 1 business day", unverified: true}
+  - {doc_id: policy_v3, term_key: sla.first_response.Growth.P1, value: 2, unit: business_hours,
+     source_quote: "Growth 2 business hours 4 business hours 2 business days", unverified: true}
+  - {doc_id: policy_v3, term_key: sla.first_response.Growth.P2, value: 4, unit: business_hours,
+     source_quote: "Growth 2 business hours 4 business hours 2 business days", unverified: true}
+  - {doc_id: policy_v3, term_key: sla.first_response.Growth.P3, value: 2, unit: business_days,
+     source_quote: "Growth 2 business hours 4 business hours 2 business days", unverified: true}
+  - {doc_id: policy_v3, term_key: sla.first_response.Standard.P1, value: 4, unit: business_hours,
+     source_quote: "Standard 4 business hours 1 business day 2 business days", unverified: true}
+  - {doc_id: policy_v3, term_key: sla.first_response.Standard.P2, value: 1, unit: business_days,
+     source_quote: "Standard 4 business hours 1 business day 2 business days", unverified: true}
+  - {doc_id: policy_v3, term_key: sla.first_response.Standard.P3, value: 2, unit: business_days,
+     source_quote: "Standard 4 business hours 1 business day 2 business days", unverified: true}
+  - {doc_id: policy_v3, term_key: precedence.tickets_context_only, value: true, unit: bool,
+     source_quote: "Historical tickets and internal notes are context only and may contain incorrect past guidance.", unverified: true}
+
+  # ---------- contract_northstar — tier 1, ACCT-001 ----------
+  - {doc_id: contract_northstar, term_key: sla.first_response.P1, value: 15, unit: minutes, coverage: "24x7",
+     source_quote: "P1: 15 minutes, 24x7", unverified: true}
+  - {doc_id: contract_northstar, term_key: sla.first_response.P2, value: 1, unit: hours,
+     source_quote: "P2: 1 hour", unverified: true}
+  - {doc_id: contract_northstar, term_key: sla.first_response.P3, value: 8, unit: business_hours,
+     source_quote: "P3: 8 business hours", unverified: true}
+  - {doc_id: contract_northstar, term_key: cancellation.fee_waived, value: true, unit: bool,
+     source_quote: "Northstar may cancel any BOOKED shipment before pickup with no cancellation fee, regardless of how long ago the shipment was booked.", unverified: true}
+  - {doc_id: contract_northstar, term_key: cancellation.fee_waived_ignores_window, value: true, unit: bool,
+     source_quote: "regardless of how long ago the shipment was booked", unverified: true}
+  - {doc_id: contract_northstar, term_key: cancellation.picked_up_allowed, value: false, unit: bool,
+     source_quote: "Once a shipment is PICKED_UP, the standard return-to-origin process applies.", unverified: true}
+  - {doc_id: contract_northstar, term_key: service_credit.monthly_aggregate_cap_inr, value: 5000, unit: INR,
+     enforceable: false,   # A10: no credits ledger exists; headroom is unknowable
+     source_quote: "Monthly aggregate service credits are capped at INR 5,000.", unverified: true}
+  - {doc_id: contract_northstar, term_key: service_credit.defers_to_sop, value: true, unit: bool,
+     source_quote: "Unless this agreement states otherwise, the current ParcelPilot service-credit SOP applies.", unverified: true}
+
+  # ---------- contract_lumenworks — tier 1, ACCT-002 ----------
+  - {doc_id: contract_lumenworks, term_key: sla.first_response.P1, value: 2, unit: business_hours,
+     source_quote: "P1: 2 business hours", unverified: true}
+  - {doc_id: contract_lumenworks, term_key: sla.first_response.P2, value: 4, unit: business_hours,
+     source_quote: "P2: 4 business hours", unverified: true}
+  - {doc_id: contract_lumenworks, term_key: sla.first_response.P3, value: 2, unit: business_days,
+     source_quote: "P3: 2 business days", unverified: true}
+  - {doc_id: contract_lumenworks, term_key: sla.coverage.weekend_or_after_hours, value: false, unit: bool,
+     source_quote: "No weekend or after-hours support coverage.", unverified: true}
+  - {doc_id: contract_lumenworks, term_key: cancellation.defers_to_sop, value: true, unit: bool,
+     source_quote: "No special cancellation-fee waiver applies. Use the current ParcelPilot Cancellation & Service Credit SOP.", unverified: true}
+  - {doc_id: contract_lumenworks, term_key: service_credit.delay_threshold_hours, value: 4, unit: hours,
+     source_quote: "If a pickup is more than 4 hours past the end of the scheduled pickup window", unverified: true}
+  - {doc_id: contract_lumenworks, term_key: service_credit.fixed_amount_inr, value: 300, unit: INR,
+     source_quote: "LumenWorks receives a fixed INR 300 service credit", unverified: true}
+  - {doc_id: contract_lumenworks, term_key: service_credit.replaces_sop_amount_and_threshold, value: true, unit: bool,
+     source_quote: "This clause replaces the default failed-pickup credit amount and timing threshold in the SOP.", unverified: true}
+
+  # ---------- product_guide — tier 3 ----------
+  - {doc_id: product_guide, term_key: bulk_upload.max_rows, value: 5000, unit: rows,
+     source_quote: "Supported file size is up to 5,000 rows per CSV.", unverified: true}
+  - {doc_id: product_guide, term_key: bulk_upload.available_plans, value: [Growth, Enterprise], unit: list,
+     source_quote: "Bulk Upload: Available on Growth and Enterprise.", unverified: true}
+  - {doc_id: product_guide, term_key: bulk_upload.excluded_plans, value: [Standard], unit: list,
+     source_quote: "Standard: Bulk Upload is not included.", unverified: true}
+  - {doc_id: product_guide, term_key: known_issue.KI-208.failure_threshold_rows, value: 3000, unit: rows,
+     source_quote: "intermittent failures on CSV uploads above approximately 3,000 rows, even though the supported product limit remains 5,000 rows", unverified: true}
+  - {doc_id: product_guide, term_key: known_issue.KI-211.max_webhook_delay_minutes, value: 20, unit: minutes,
+     source_quote: "SwiftShip pickup confirmation webhooks can arrive up to 20 minutes late.", unverified: true}
+
+  # ---------- policy_v2 — DEPRECATED (tier 5) ----------
+  # Loaded ONLY so tests can assert these values never reach a customer answer.
+  # policy_engine must never select a tier-5 term.
+  - {doc_id: policy_v2, term_key: sla.first_response.Enterprise.P1, value: 1, unit: hours, deprecated: true,
+     source_quote: "Enterprise 1 hour 4 hours 2 business days", unverified: true}
+  - {doc_id: policy_v2, term_key: sla.first_response.Growth.P1, value: 4, unit: business_hours, deprecated: true,
+     source_quote: "Growth 4 business hours 1 business day 3 business days", unverified: true}
+  - {doc_id: policy_v2, term_key: sla.first_response.Standard.P1, value: 8, unit: business_hours, deprecated: true,
+     source_quote: "Standard 8 business hours 2 business days 3 business days", unverified: true}
