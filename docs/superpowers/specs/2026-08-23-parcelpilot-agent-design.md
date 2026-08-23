@@ -152,6 +152,41 @@ Every promotion is written to the trace as an `override_promoted` entry.
 
 Every term not yet signed off carries `unverified: true`. The eval reports verified and unverified scores as separate figures, so it is visible at a glance which results mean anything.
 
+### 4.1 The term resolver — one function, two key shapes
+
+Contracts key SLA terms as `sla.first_response.{severity}` (the contract already
+knows whose account it is). Policy keys them as `sla.first_response.{plan}.{severity}`.
+Two shapes resolved in two places is how the override quietly stops working in one
+of them, so resolution lives in **exactly one documented function**:
+
+```
+resolve_sla_target(account, severity, terms) -> ResolvedTerm
+    1. If the account has a contract, look for sla.first_response.{severity}
+       on that contract doc_id. Found -> return it with override_applied=True
+       and governing_source=<contract doc_id>.
+    2. Otherwise look for sla.first_response.{account.plan}.{severity} on the
+       current policy. Found -> return with override_applied=False.
+    3. Neither -> PolicyUndecidable. Never guess a target.
+```
+
+**Test matrix, one unit test per cell:** each of the 3 severities against each of
+the 2 contracts (6), and each of the 3 severities against each of the 3 plans (9).
+Fifteen tests. They use fixture terms, not the curated file, so they are not
+blocked on term sign-off.
+
+### 4.2 Tier-5 exclusion is enforced by construction, not by comment
+
+A term marked `deprecated: true` (or belonging to a tier-5 document) must be
+**unreachable from `evaluate_policy`**. This is enforced in the terms repository:
+the SQL for term lookup filters `authority_tier < 5` unconditionally, and there is
+no parameter that relaxes it. Deprecated terms are readable only through a
+separately named function used by retrieval for the internal-role comparison case
+(`g12`), never by the policy engine.
+
+A test asserts that a tier-5 term which *would* satisfy a lookup is not returned by
+it. A comment saying "never select tier 5" is not a control; a query that cannot
+express it is.
+
 ---
 
 ## 5. Testing
