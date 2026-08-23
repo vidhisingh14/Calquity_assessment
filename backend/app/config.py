@@ -21,7 +21,11 @@ class Settings(BaseSettings):
 
     # --- Chat: the agent loop ---------------------------------------------
     chat_provider: Literal["cerebras", "gemini"] = "gemini"
-    chat_model: str = "gemini-3.6-flash"
+    # "-latest"/"3.x" alias names (e.g. gemini-flash-latest, gemini-3.1-flash-
+    # lite) exist only on the Developer API. Vertex AI's model catalog is
+    # versioned differently and 404s on those aliases, so the default here is
+    # a name that resolves in BOTH auth modes.
+    chat_model: str = "gemini-2.5-flash"
     cerebras_api_key: str = ""
     cerebras_base_url: str = "https://api.cerebras.ai/v1"
 
@@ -52,7 +56,7 @@ class Settings(BaseSettings):
 
     # --- Judge / signal naming --------------------------------------------
     judge_provider: Literal["gemini", "cerebras"] = "gemini"
-    judge_model: str = "gemini-3.1-flash-lite"
+    judge_model: str = "gemini-2.5-flash"
 
     # --- Agent behaviour ---------------------------------------------------
     max_agent_steps: int = 8
