@@ -28,37 +28,39 @@ export function SignalsBoard({
     : [];
 
   return (
-    <div className="signals-board">
-      <div className="board-eyebrow">Dispatch Board</div>
-      {error && <div className="signals-error">Board unavailable — {error}</div>}
-      {!error && !signals && <div className="signals-loading">Reading the board…</div>}
-      {!error && signals && grouped.length === 0 && (
-        <div className="signals-empty">Nothing open. The board is clear.</div>
-      )}
-      {grouped.map((g) => (
-        <div key={g.severity} className={`signal-group sev-${g.severity}`}>
-          <div className="signal-group-header">{g.severity.toUpperCase()}</div>
-          {g.items.map((s) => (
-            <button
-              key={s.signal_id}
-              className="signal-item"
-              onClick={() =>
-                onInvestigate(
-                  `Investigate this signal: ${s.title} (${s.signal_type}). ` +
-                    `Detail: ${JSON.stringify(s.detail)}`,
-                )
-              }
-            >
-              <span className="signal-title">{s.title}</span>
-              <span className="signal-accounts">
-                {s.affected_accounts.length > 0
-                  ? s.affected_accounts.join(", ")
-                  : "no account link"}
-              </span>
-            </button>
-          ))}
-        </div>
-      ))}
+    <div className="board-scroll">
+      <div className="signals-board">
+        <div className="board-eyebrow">Dispatch Board</div>
+        {error && <div className="signals-error">Board unavailable — {error}</div>}
+        {!error && !signals && <div className="signals-loading">Reading the board…</div>}
+        {!error && signals && grouped.length === 0 && (
+          <div className="signals-empty">Nothing open. The board is clear.</div>
+        )}
+        {grouped.map((g) => (
+          <div key={g.severity} className={`signal-group sev-${g.severity}`}>
+            <div className="signal-group-header">{g.severity.toUpperCase()}</div>
+            {g.items.map((s) => (
+              <button
+                key={s.signal_id}
+                className="signal-item"
+                onClick={() =>
+                  onInvestigate(
+                    `Investigate this signal: ${s.title} (${s.signal_type}). ` +
+                      `Detail: ${JSON.stringify(s.detail)}`,
+                  )
+                }
+              >
+                <span className="signal-title">{s.title}</span>
+                <span className="signal-accounts">
+                  {s.affected_accounts.length > 0
+                    ? s.affected_accounts.join(", ")
+                    : "no account link"}
+                </span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

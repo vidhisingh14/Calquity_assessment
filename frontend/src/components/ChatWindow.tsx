@@ -144,45 +144,49 @@ export function ChatWindow({
 
   return (
     <div className="chat-window">
-      <div className="messages">
-        {turns.map((turn, i) =>
-          turn.role === "user" ? (
-            <div key={i} className="bubble user">
-              {turn.content}
+      <div className="messages-scroll">
+        <div className="messages">
+          {turns.map((turn, i) =>
+            turn.role === "user" ? (
+              <div key={i} className="bubble user">
+                {turn.content}
+              </div>
+            ) : (
+              <AssistantTurn
+                key={i}
+                turn={turn}
+                userId={currentUser.user_id}
+                isLast={i === turns.length - 1}
+                onActionResolved={() => setPendingUnresolved(false)}
+                onActionShown={() => setPendingUnresolved(true)}
+              />
+            ),
+          )}
+          {sending && (
+            <div className="bubble assistant pending">
+              <ToolTimeline steps={liveSteps} />
+              {liveSteps.length === 0 && <span className="thinking">Thinking…</span>}
             </div>
-          ) : (
-            <AssistantTurn
-              key={i}
-              turn={turn}
-              userId={currentUser.user_id}
-              isLast={i === turns.length - 1}
-              onActionResolved={() => setPendingUnresolved(false)}
-              onActionShown={() => setPendingUnresolved(true)}
-            />
-          ),
-        )}
-        {sending && (
-          <div className="bubble assistant pending">
-            <ToolTimeline steps={liveSteps} />
-            {liveSteps.length === 0 && <span className="thinking">Thinking…</span>}
-          </div>
-        )}
+          )}
+        </div>
       </div>
       <div className="composer">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder={
-            composerLocked
-              ? "Resolve the pending escalation to continue…"
-              : `Ask as ${currentUser.display_name}…`
-          }
-          disabled={sending || composerLocked}
-        />
-        <button onClick={submit} disabled={sending || composerLocked || !draft.trim()}>
-          Send
-        </button>
+        <div className="composer-inner">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            placeholder={
+              composerLocked
+                ? "Resolve the pending escalation to continue…"
+                : `Ask as ${currentUser.display_name}…`
+            }
+            disabled={sending || composerLocked}
+          />
+          <button onClick={submit} disabled={sending || composerLocked || !draft.trim()}>
+            Send
+          </button>
+        </div>
       </div>
     </div>
   );
