@@ -10,51 +10,84 @@
 
 Everything in this section was **inferred, not told**. Each item changes behaviour if I guessed wrong. Correct them here and the change propagates to the code, the terms file and the golden set in one pass.
 
+**Sign-off status (2026-08-23):** A1, A3, A8, A10, A11 signed off as proposed. A2 resolved to option (b). A4 approved with two additions. A5 follows A4. A6 and A7 resolved by investigation and by changing the Phase 9 gate respectively. **No assumption in this section is still open.** The remaining unverified material is the terms table and the golden set, which are reviewed separately.
+
 ### 0.1 Conflicts between the spec and the real data pack
 
 **A1 — §9.3's cancellation formula contradicts SOP v4.**
 The spec computes `hours_to_pickup = (order.pickup_due_at - snapshot_time)`. SOP v4 measures the free window from **booking**, not from pickup: *"No fee within 30 minutes of booking."* The workbook has no `pickup_due_at` at all; it has `booked_at`, `pickup_window_start`, `pickup_window_end` and `cancellation_requested_at`.
 
-*Proposed rule:* `minutes_since_booking = cancellation_requested_at - booked_at`, falling back to `snapshot_time` when `cancellation_requested_at` is null (the hypothetical "can I cancel this now?" question).
-**Needs sign-off — it changes every cancellation verdict.**
+*Rule:* `minutes_since_booking = cancellation_requested_at - booked_at`, falling back to `snapshot_time` when `cancellation_requested_at` is null (the hypothetical "can I cancel this now?" question).
+**✅ SIGNED OFF as proposed.**
 
 **A2 — "Before pickup" is not verifiable for SwiftShip orders.**
 Northstar may cancel "any BOOKED shipment before pickup". ORD-1001 is SwiftShip, status BOOKED, no `pickup_actual_at`, and at the 11:00 snapshot it sits inside its 10:30–11:30 pickup window. KI-211 states a SwiftShip parcel may already be collected while ParcelPilot still shows BOOKED, up to 20 minutes late. So the flagship example question depends on a fact the system cannot confirm.
 
-*Options:* (a) trust the stored status and answer plainly; (b) answer "no fee" and surface the KI-211 caveat; (c) return undecidable and escalate.
-*Recommendation:* **(b)** — it demonstrates the "knows when it does not know" behaviour §1.9 rewards without refusing an answerable question.
-**Needs sign-off — it changes the expected answer for the spec's headline demo.**
+**✅ RESOLVED: option (b)** — answer "no fee" and surface the KI-211 caveat.
+
+**The caveat is verdict-changing, not cosmetic.** If the parcel was in fact already collected, the correct answer is not "no fee" at all — it is that the shipment is PICKED_UP and the return-to-origin workflow applies. So the caveat is not a hedge appended to a settled answer; it names the one fact that would invert the outcome. The system states the verdict its data supports, names the fact it cannot verify, and says what changes if that fact goes the other way.
+
+**This is the lead demo in the video.** It shows the system knowing the boundary of its own evidence, which is §1.9's third signal, on the spec's own headline question.
 
 **A3 — "Business hours" and "business days" are never defined.**
 They appear throughout policy v3 and both contracts. No working window, no timezone, no holiday calendar.
-*Proposed:* config constant `BUSINESS_HOURS = Mon–Fri 09:00–18:00 Asia/Kolkata`, no holiday calendar, documented as an assumption.
+*Rule:* config constant `BUSINESS_HOURS = Mon–Fri 09:00–18:00 Asia/Kolkata`, no holiday calendar, documented as an assumption.
 Mitigating fact: every business-hours case in this dataset is comfortably inside its target, so no verdict in the golden set flips on this choice.
+**✅ SIGNED OFF as proposed.**
 
 **A4 — Ticket severity does not exist in the data.**
 §6 declares `tickets.severity`. The workbook has none. Every SLA answer depends on it, so it must be derived from `subject` + `description` against policy v3 §2.
-*Proposed:* a deterministic keyword classifier at ingest writing `derived_severity` and `severity_rationale`, surfaced everywhere as **derived, not source truth**, with low-confidence cases returning undecidable. My proposed classifications are in the golden-set review table and need sign-off.
+**✅ APPROVED in principle, with two additions:**
+
+1. **SLA answers must state the derivation inline.** An answer that says "the SLA is breached" without saying *how* the severity was decided is asking to be trusted on the one step that was inferred rather than read. So every SLA answer names the classification and the evidence for it in the answer body.
+2. **SLA answers must offer escalation if the classification is disputed.** The derivation is the weakest link in the chain; the exit to a human sits right next to it.
+3. **No golden question may depend on TKT-504's severity** — it is the genuinely arguable one (P2 or P3). G19 uses TKT-504 only for the KI-211 known-issue lookup and asserts nothing about its severity.
+
+Classifier remains a deterministic keyword rule at ingest writing `derived_severity` and `severity_rationale`, surfaced everywhere as **derived, not source truth**, with low-confidence cases returning undecidable.
 
 **A5 — `issue_type` does not exist either.** §12's `issue_spike` and `multi_account_issue` both key on it. Same derivation approach as A4.
 
 **A6 — `tickets.order_id` does not exist.** §6 declares the foreign key; the workbook has no ticket-to-order link of any kind.
-Consequence: §12's `repeat_offender_order` rule is **not computable**.
-*Recommendation:* drop the rule and name it in the product note rather than inventing a fuzzy join on carrier and timestamp.
+
+**✅ RESOLVED by investigation.** Checked whether ticket text carries order ids recoverable by regex: scanning `ORD-\d+` across **every column** of all 7 tickets returns **zero matches**. There is no link to recover, so no `derived_order_id` column is added.
+Consequence: §12's `repeat_offender_order` rule is **dropped** and named as a data limitation in the product note.
 
 **A7 — Only two §12 signals actually fire on this data.**
 With the thresholds exactly as written: `sla_breached` fires twice (TKT-501, TKT-505). `issue_spike` needs 3+ in 24h — the maximum is 1. `multi_account_issue` needs 3+ accounts — the maximum is 1. `carrier_degradation` has no baseline (6 orders total). Phase 9's gate requires at least three signals.
-*Options:* (a) add rules that honestly fit the data — `security_incident` (P1 credential exposure), `known_issue_match` (open ticket matching KI-208/KI-211), `unattended_p1`; (b) lower thresholds to manufacture volume.
-*Recommendation:* **(a)**. Option (b) is precisely the "thresholds too low" failure §18 warns about.
+**✅ RESOLVED — the gate changes, not the rules.**
+
+The mistake was treating "the board shows at least three signals" as a requirement the *rules* must satisfy. A detection rule set tuned until it produces a target number of signals is a rule set tuned to the demo, which is the "thresholds too low" failure §18 names.
+
+So:
+
+1. **Thresholds stay exactly as §12 writes them.** No rule is loosened to raise volume.
+2. **The Phase 9 gate becomes:** every implemented rule is exercised by a test fixture, and the board shows whatever the real data honestly produces. Correctness of each rule is proven against fixtures; the board is an observation, not a target.
+3. **`security_incident`, `known_issue_match` and `unattended_p1` are added on their own merit** — each is a genuinely useful ops signal for this domain — and not because they raise the count.
+
+If the real data yields two signals, the board shows two signals, and the product note says why. That is the honest answer and a better one to defend on camera than a padded board.
 
 **A8 — There is no first-response timestamp.** SLA targets are *first-response* targets, but no field records when an agent first replied. `assigned_to` is populated without a time.
-*Proposed:* for open tickets, `elapsed = snapshot_time - created_at`, treating every open ticket as still awaiting first response.
+*Rule:* for open tickets, `elapsed = snapshot_time - created_at`, treating every open ticket as still awaiting first response.
+**✅ SIGNED OFF as proposed.**
 
 **A9 — "10% of the shipment fee"** maps to `orders.shipment_fee_inr`. Low risk, stated for completeness.
 
 **A10 — Northstar's INR 5,000 monthly aggregate credit cap is not enforceable.**
 No credits ledger exists, so credits already granted this month are unknowable.
-*Proposed:* state the cap, never claim remaining headroom, and route any question about remaining balance to escalation.
+*Rule:* state the cap, never claim remaining headroom, and route any question about remaining balance to escalation.
+**✅ SIGNED OFF as proposed.**
 
 **A11 — SLA boundary convention.** `elapsed > target` is breached; `elapsed == target` is at-target, not breached. Matters because TKT-501 sits at exactly 30 minutes against policy v3's Enterprise P1 target of 30 minutes. The governing Northstar contract target of 15 minutes makes it breached regardless, but the convention must be explicit.
+**✅ SIGNED OFF as proposed.** The `sla_status` verdict carries a distinct `at_target` outcome so the boundary case is visible rather than folded into one of its neighbours.
+
+**A12 — Policy v3's SLA table mapping (terms rows 14–22), reassessed.**
+I flagged the severity-to-column mapping as inferred from table layout. It is better supported than that, and I checked it numerically:
+
+- **Within each plan**, targets increase strictly across P1 < P2 < P3 — all three plans.
+- **Across plans**, targets are non-decreasing Enterprise ≤ Growth ≤ Standard for every severity column — the only ties are Growth and Standard both at 2 business days for P3.
+- **v2 → v3 tightens everywhere**: exactly halved in 7 of 9 cells, and the two longest P3 targets tighten from 3 to 2 business days. No cell loosened.
+
+A transposed reading would break at least one of those orderings. Treated as **likely correct**, pending a visual check of the table header during review. (Comparison uses 1 business day = 9 business hours purely as a common scale for the ordering check; it is not a claim about the business calendar, which is A3's job.)
 
 ### 0.2 Assumptions carried from the brainstorm
 
@@ -131,12 +164,25 @@ Layout follows §3: `unit/` (services + auth, no DB), `integration/` (tools + re
 
 **Fixtures are generated, not committed as binaries:** `fpdf2` writes two tiny PDFs (one current, one deprecated, with known conflicting values), `openpyxl` writes a minimal workbook with a README snapshot time. `data/raw/` stays reserved for the real pack.
 
-**Four blocking gates** fail the build:
+**Blocking gates** fail the build:
 
 1. §4.2's layer-import greps.
 2. §8.3's cross-account leak tests (documents and records).
 3. An e2e test asserting the deprecated fixture policy is never cited in a customer answer.
 4. The `tools` + `response_format` guard.
+5. The golden rows marked `blocking: true` — the four leak questions, the **positive** internal-scope control, both ticket-resolution traps, and the confirmation gate.
+
+### 5.1 The eval assertion model
+
+Correctness is asserted on the **structured verdict** from `evaluate_policy`, never on prose substrings. The earlier draft used `verdict_contains: ["no", "fee"]`, which passes on the sentence *"you cannot cancel this without a fee"* — it tested prose, not the verdict. Assertions now key on `outcome`, `reason_code`, `amount_inr`, `override_applied` and `governing_source`, with three verdict schemas (`cancellation_fee`, `service_credit`, `sla_status`) defined at the head of the golden set.
+
+Substring assertions survive in exactly one role: **leak and safety checks**, where "this string must never appear in the answer" is precisely the right instrument. Prose correctness goes to the judge via a per-question `judge_rubric`.
+
+**Tier-4 citation convention.** Historical ticket resolutions cite as `ticket:TKT-450`. Without a convention the sources array only ever holds `doc_id` values, so `must_not_cite: [TKT-450]` could never fire and the trap tested nothing.
+
+**The positive scope control.** `g32` has an `ops_lead` legitimately reading across all four accounts. Without it, a scope filter tightened until nothing crosses an account boundary would score perfectly on every leak test while breaking internal ops entirely. A test suite that can only fail in one direction only measures one direction.
+
+**The confirmation gate as a golden row.** `g31` asserts a `pending_action` is returned, that `escalations` has zero rows before confirmation, that a double confirm still yields exactly one row, and that an expired token is refused.
 
 ---
 
