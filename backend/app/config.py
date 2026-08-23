@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # --- Chat: the agent loop ---------------------------------------------
     chat_provider: Literal["cerebras", "gemini"] = "cerebras"
-    chat_model: str = "llama-3.3-70b"
+    chat_model: str = "gpt-oss-120b"
     cerebras_api_key: str = ""
     cerebras_base_url: str = "https://api.cerebras.ai/v1"
 

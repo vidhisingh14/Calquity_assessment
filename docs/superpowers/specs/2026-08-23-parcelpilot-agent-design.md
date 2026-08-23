@@ -102,9 +102,11 @@ A transposed reading would break at least one of those orderings. Treated as **l
 
 | Job | Provider | Model | Why |
 |---|---|---|---|
-| Agent loop | Cerebras | config `CHAT_MODEL` | OpenAI-compatible tool calling; speed makes the live tool timeline compelling |
+| Agent loop | Cerebras | `gpt-oss-120b` (config `CHAT_MODEL`) | OpenAI-compatible tool calling; speed makes the live tool timeline compelling |
 | Embeddings | Gemini | `gemini-embedding-001` @ 1536 dims | Cerebras has no embeddings endpoint; MRL 1536 keeps §6's `VECTOR(1536)` exactly |
 | Eval judge, signal naming | Gemini | config `JUDGE_MODEL` | Avoids the answering model grading itself |
+
+**Model correction (2026-08-23):** the original draft named `llama-3.3-70b`. Verified against Cerebras's current public-endpoint catalog, that model has been retired — the live catalog now holds only `gpt-oss-120b` and `gemma-4-31b`. Between those two, `gpt-oss-120b` is the better fit: it was built with function calling as a first-class capability, and comparative data on complex tool-use sequences favours it over the Gemma 3/4 family for exactly the kind of multi-hop chain this agent runs. `gemma-4-31b` was considered and rejected on that basis. This is a correction of fact, not a new design decision — it stays inside the Cerebras/Gemini split already approved; only the specific Cerebras model changes.
 
 **Gate before Phase 5:** a spike runs a 3-hop chain (`lookup_records` → `search_documents` → `evaluate_policy`) ten times and counts runs producing valid tool calls with correct arguments and no invented tool names. Below 9/10 flips `CHAT_PROVIDER=gemini`. The protocol seam makes this a config change.
 
