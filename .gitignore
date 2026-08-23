@@ -11,6 +11,17 @@ venv/
 .env.local
 *.key
 
+# Vertex AI service account key. The .example file (placeholder, no real
+# secrets) stays tracked; the real one, however named, never does.
+backend/credentials/*.json
+!backend/credentials/*.example.json
+
+# GCP service account keys anywhere in the repo, by Google's own filename
+# convention: <project-name>-<12-hex-char-key-id>.json. Catches a key
+# downloaded and dropped at the repo root by mistake, not just the one
+# expected location above.
+*-????????????.json
+
 # Node
 node_modules/
 dist/

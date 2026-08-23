@@ -31,8 +31,13 @@ class Embedder(Protocol):
 
 
 class GeminiEmbedder:
-    """Free-tier limit is 100 RPM, and ingestion is a one-off batch of a few
-    hundred chunks, so a modest batch size plus linear backoff is sufficient."""
+    """Developer API free tier is 100 RPM; Vertex AI has its own, separate
+    quota. Ingestion is a one-off batch of a few hundred chunks either way, so
+    a modest batch size plus linear backoff is sufficient in both modes.
+
+    Auth mode is resolved by gemini_auth.build_client(), the same seam
+    GeminiChatClient uses -- this class does not need to know which is active.
+    """
 
     def __init__(self, api_key: str | None = None, model: str | None = None,
                  dim: int | None = None, batch_size: int = 32) -> None:
@@ -41,14 +46,15 @@ class GeminiEmbedder:
         self.model = model or settings.embed_model
         self.dim = dim or settings.embed_dim
         self.batch_size = batch_size
-        if not self.api_key:
+        if settings.gemini_auth_mode == "api_key" and not self.api_key:
             raise LLMError("GEMINI_API_KEY is not set; embeddings unavailable")
 
     def embed(self, texts: list[str], task_type: TaskType) -> list[list[float]]:
-        from google import genai
         from google.genai import types
 
-        client = genai.Client(api_key=self.api_key)
+        from app.llm import gemini_auth
+
+        client = gemini_auth.build_client()
         vectors: list[list[float]] = []
 
         for start in range(0, len(texts), self.batch_size):

@@ -19,6 +19,25 @@ make setup
 make up
 ```
 
+### Using Vertex AI instead of the Gemini Developer API key
+
+The Developer API's free tier caps at roughly 20 requests/day/model, which is
+tight for a full eval run (see
+`docs/decisions/0001-gemini-quota-and-spike-gate.md`). Vertex AI draws from a
+separate, larger quota:
+
+```bash
+cp backend/credentials/vertex-service-account.example.json \
+   backend/credentials/vertex-service-account.json
+# paste your real downloaded GCP service account key's JSON into that file
+```
+
+Then in `.env`, set `GEMINI_AUTH_MODE=vertex`. The project id is read from the
+key file itself, so `VERTEX_PROJECT_ID` only needs setting if you want to
+override it. `backend/credentials/vertex-service-account.json` is gitignored;
+the `.example.json` placeholder is the only one tracked. Details:
+`docs/decisions/0004-vertex-ai-auth-mode.md`.
+
 - API: http://localhost:8000 (docs at `/docs`, health at `/healthz`)
 - Web: http://localhost:5173
 

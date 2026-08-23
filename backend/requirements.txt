@@ -11,8 +11,12 @@ PyYAML==6.0.2
 tiktoken==0.8.0
 
 # LLM providers: Cerebras is OpenAI-compatible, Gemini has its own SDK.
-openai==1.59.6
-google-genai==0.8.0
+# google-genai's Client(vertexai=True, project=..., credentials=...) signature
+# (app/llm/gemini_auth.py) is what was actually verified locally; the 0.8.0
+# pin this repo started with predates that shape and was never run.
+openai==3.3.1
+google-genai==2.19.0
+google-auth==2.56.3
 
 # Tests
 pytest==8.3.4

@@ -124,24 +124,29 @@ class CerebrasChatClient:
 
 
 class GeminiChatClient:
-    """Fallback for the agent loop, and the default for judge / signal naming."""
+    """Fallback for the agent loop, and the default for judge / signal naming.
+
+    Auth mode (Developer API key vs. Vertex AI service account) is resolved
+    once per call by gemini_auth.build_client(), driven by
+    settings.gemini_auth_mode. Neither this class nor its caller needs to know
+    which mode is active -- that is the entire point of the seam.
+    """
 
     def __init__(self, api_key: str | None = None, model: str | None = None) -> None:
         settings = get_settings()
         self.api_key = api_key or settings.gemini_api_key
         self.model = model or settings.judge_model
-        if not self.api_key:
+        if settings.gemini_auth_mode == "api_key" and not self.api_key:
             raise LLMError("GEMINI_API_KEY is not set")
 
     def complete(self, messages, tools=None, response_format=None, temperature=0.0):
         _guard(tools, response_format)
 
-        from google import genai
         from google.genai import types
 
-        from app.llm import gemini_compat
+        from app.llm import gemini_auth, gemini_compat
 
-        client = genai.Client(api_key=self.api_key)
+        client = gemini_auth.build_client()
 
         # Tool calls and tool RESULTS travel as parts in Gemini, not as separate
         # roles. Filtering by role drops the model's own tool output, after

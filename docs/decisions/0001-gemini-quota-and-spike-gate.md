@@ -50,9 +50,17 @@ before rate-limiting cut in showed 2/2 verdict-correct.
 - **The formal 9/10 spike score is not recorded as passed**, because it could
   not be completed against the daily quota available. This is stated plainly
   rather than papered over with a partial number presented as the full result.
-- Re-run `python -m scripts.spike_tool_calling --runs 10` once quota resets
-  (next UTC day) or a paid tier is enabled, and update this ADR with the
-  actual score before treating the gate as closed.
+- **Update (2026-08-23, same day):** a Vertex AI service account key became
+  available. `app/llm/gemini_auth.py` adds a second auth mode
+  (`GEMINI_AUTH_MODE=vertex`) alongside the Developer API key mode, selected
+  by config and transparent to `GeminiChatClient` and `GeminiEmbedder` — both
+  already called through the shared `gemini_auth.build_client()` seam, so
+  neither needed to change beyond that call site. Vertex AI has its own quota,
+  separate from the Developer API free tier, which is the actual fix for this
+  ADR rather than a workaround. See `docs/decisions/0004-vertex-ai-auth-mode.md`.
+- Re-run `python -m scripts.spike_tool_calling --runs 10` on Vertex once the
+  service account key is in place, and update this ADR with the actual score
+  before treating the gate as closed.
 
 ## Consequence
 

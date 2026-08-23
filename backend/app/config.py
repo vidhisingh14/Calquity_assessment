@@ -33,6 +33,23 @@ class Settings(BaseSettings):
     embed_dim: int = 1536
     gemini_api_key: str = ""
 
+    # --- Gemini auth mode ---------------------------------------------------
+    # "api_key"  -> the Gemini Developer API, gated at ~20 requests/day/model
+    #               on the free tier. This is what blocked the full spike and
+    #               eval run -- see docs/decisions/0001.
+    # "vertex"   -> Vertex AI, authenticated with a GCP service account key.
+    #               Separate, much larger quota from the Developer API's free
+    #               tier, which is why this exists as a second mode rather
+    #               than just a different key in the same slot.
+    gemini_auth_mode: Literal["api_key", "vertex"] = "api_key"
+    vertex_project_id: str = ""
+    vertex_location: str = "us-central1"
+    # Path to the downloaded service account JSON. Copy
+    # backend/credentials/vertex-service-account.example.json to
+    # backend/credentials/vertex-service-account.json (gitignored) and paste
+    # the real key contents in; this setting just needs to point at it.
+    vertex_credentials_path: str = "credentials/vertex-service-account.json"
+
     # --- Judge / signal naming --------------------------------------------
     judge_provider: Literal["gemini", "cerebras"] = "gemini"
     judge_model: str = "gemini-3.1-flash-lite"
