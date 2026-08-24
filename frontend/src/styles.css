@@ -483,6 +483,59 @@ html, body { overflow-x: hidden; }
   font-size: 0.85rem;
 }
 
+/* Cold-start notice. Free-tier hosting sleeps after inactivity and takes
+   15-20s to wake on the next request; without this, a first-time visitor
+   sees an unexplained blank/loading screen and assumes the app is broken.
+   Disappears automatically once the backend actually answers. */
+.waking-notice {
+  max-width: 420px;
+  margin: 72px auto;
+  padding: 30px 28px 24px;
+  background: var(--paper);
+  border: 1px solid var(--rail);
+  text-align: center;
+}
+.waking-stamp {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber-ink);
+  border: 2.5px solid var(--amber-ink);
+  border-radius: 3px;
+  padding: 5px 14px 4px;
+  transform: rotate(-3deg);
+  margin-bottom: 16px;
+}
+.waking-notice p {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.waking-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 2px;
+  border-radius: 50%;
+  background: var(--amber);
+  vertical-align: middle;
+  animation: waking-pulse 1.6s ease-in-out infinite;
+}
+@keyframes waking-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+.waking-elapsed {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--rail);
+  margin-bottom: 0;
+}
+
 /* ----------------------------------------------------------- responsive - */
 
 @media (max-width: 600px) {

@@ -4,17 +4,48 @@ import { ChatWindow } from "./components/ChatWindow";
 import { SignalsBoard } from "./components/SignalsBoard";
 import { useSession } from "./state/session";
 
+const RETRY_INTERVAL_MS = 3000;
+
 export default function App() {
   const [users, setUsers] = useState<DemoUser[]>([]);
   const [tab, setTab] = useState<"chat" | "signals">("chat");
   const [prefill, setPrefill] = useState<string | null>(null);
+  const [waking, setWaking] = useState(true);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const { currentUser, switchUser, sessionId, turns, setTurns } = useSession();
 
   useEffect(() => {
-    api.listUsers().then((r) => {
-      setUsers(r.users);
-      if (r.users.length > 0) switchUser(r.users[0]);
-    });
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout>;
+
+    // Free-tier Render spins the backend down after inactivity and takes
+    // 15-20s to cold-start it on the next request. A failed or hanging
+    // FIRST request here is the expected shape of a cold start, not a real
+    // error, so this retries quietly rather than giving up and leaving the
+    // screen stuck on an unexplained "Loading users..." forever.
+    const attempt = () => {
+      api
+        .listUsers()
+        .then((r) => {
+          if (cancelled) return;
+          setUsers(r.users);
+          setWaking(false);
+          if (r.users.length > 0) switchUser(r.users[0]);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          retryTimer = setTimeout(attempt, RETRY_INTERVAL_MS);
+        });
+    };
+    attempt();
+
+    const clock = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(retryTimer);
+      clearInterval(clock);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -34,11 +65,13 @@ export default function App() {
           <label>Viewing as</label>
           <select
             value={currentUser?.user_id ?? ""}
+            disabled={waking}
             onChange={(e) => {
               const u = users.find((x) => x.user_id === e.target.value);
               if (u) switchUser(u);
             }}
           >
+            {waking && <option value="">Waking up…</option>}
             {users.map((u) => (
               <option key={u.user_id} value={u.user_id}>
                 {u.display_name} — {u.role}
@@ -61,8 +94,20 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        {!currentUser ? (
-          <div className="loading">Loading users…</div>
+        {waking || !currentUser ? (
+          <div className="waking-notice">
+            <div className="waking-stamp">Waking Dispatch</div>
+            <p>
+              <span className="waking-pulse" aria-hidden="true" />
+              This demo runs on free-tier hosting that sleeps after a few
+              minutes of inactivity. It's booting up now — usually back
+              within 20&ndash;30 seconds.
+            </p>
+            {elapsedSeconds > 25 && (
+              <p>Still on it — a cold start can occasionally run a bit longer.</p>
+            )}
+            <p className="waking-elapsed">{elapsedSeconds}s elapsed</p>
+          </div>
         ) : tab === "signals" && isInternal ? (
           <SignalsBoard
             userId={currentUser.user_id}
