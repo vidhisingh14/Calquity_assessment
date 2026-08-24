@@ -6,11 +6,22 @@ import { useSession } from "./state/session";
 
 const RETRY_INTERVAL_MS = 3000;
 
+// The notice must be readable on every load, not just a slow one. A warm
+// backend can answer in under a second, and without a floor the notice
+// flashes and vanishes before anyone can read it -- which is worse than not
+// showing it at all, since it looks like a glitch. So it stays up for at
+// least this long regardless of how fast the backend actually responds; the
+// close button is the escape hatch for someone who doesn't want to wait it
+// out.
+const MIN_NOTICE_MS = 3000;
+
 export default function App() {
   const [users, setUsers] = useState<DemoUser[]>([]);
   const [tab, setTab] = useState<"chat" | "signals">("chat");
   const [prefill, setPrefill] = useState<string | null>(null);
-  const [waking, setWaking] = useState(true);
+  const [backendReady, setBackendReady] = useState(false);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const { currentUser, switchUser, sessionId, turns, setTurns } = useSession();
 
@@ -29,7 +40,7 @@ export default function App() {
         .then((r) => {
           if (cancelled) return;
           setUsers(r.users);
-          setWaking(false);
+          setBackendReady(true);
           if (r.users.length > 0) switchUser(r.users[0]);
         })
         .catch(() => {
@@ -39,16 +50,22 @@ export default function App() {
     };
     attempt();
 
+    const minTimer = setTimeout(() => setMinTimeElapsed(true), MIN_NOTICE_MS);
     const clock = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
 
     return () => {
       cancelled = true;
       clearTimeout(retryTimer);
+      clearTimeout(minTimer);
       clearInterval(clock);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Shown until BOTH the backend has actually answered and the minimum
+  // readable duration has passed -- whichever takes longer -- or until the
+  // visitor closes it themselves.
+  const showNotice = !noticeDismissed && (!backendReady || !minTimeElapsed);
   const isInternal = currentUser?.role === "support_agent" || currentUser?.role === "ops_lead";
 
   return (
@@ -65,13 +82,13 @@ export default function App() {
           <label>Viewing as</label>
           <select
             value={currentUser?.user_id ?? ""}
-            disabled={waking}
+            disabled={!backendReady}
             onChange={(e) => {
               const u = users.find((x) => x.user_id === e.target.value);
               if (u) switchUser(u);
             }}
           >
-            {waking && <option value="">Waking up…</option>}
+            {!backendReady && <option value="">Waking up…</option>}
             {users.map((u) => (
               <option key={u.user_id} value={u.user_id}>
                 {u.display_name} — {u.role}
@@ -94,8 +111,16 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        {waking || !currentUser ? (
+        {showNotice ? (
           <div className="waking-notice">
+            <button
+              className="waking-close"
+              onClick={() => setNoticeDismissed(true)}
+              aria-label="Dismiss"
+              title="Dismiss"
+            >
+              ×
+            </button>
             <div className="waking-stamp">Waking Dispatch</div>
             <p>
               <span className="waking-pulse" aria-hidden="true" />
@@ -108,6 +133,11 @@ export default function App() {
             )}
             <p className="waking-elapsed">{elapsedSeconds}s elapsed</p>
           </div>
+        ) : !currentUser ? (
+          // Reachable only if the notice was closed before the backend
+          // actually answered -- keep some acknowledgement on screen rather
+          // than going back to the silent blank state this was built to fix.
+          <div className="loading">Connecting…</div>
         ) : tab === "signals" && isInternal ? (
           <SignalsBoard
             userId={currentUser.user_id}

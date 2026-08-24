@@ -488,6 +488,7 @@ html, body { overflow-x: hidden; }
    sees an unexplained blank/loading screen and assumes the app is broken.
    Disappears automatically once the backend actually answers. */
 .waking-notice {
+  position: relative;
   max-width: 420px;
   margin: 72px auto;
   padding: 30px 28px 24px;
@@ -495,6 +496,22 @@ html, body { overflow-x: hidden; }
   border: 1px solid var(--rail);
   text-align: center;
 }
+.waking-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.waking-close:hover { color: var(--ink); background: var(--manila); }
 .waking-stamp {
   display: inline-block;
   font-family: var(--font-display);
