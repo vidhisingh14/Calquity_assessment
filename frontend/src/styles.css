@@ -50,7 +50,16 @@ body {
   outline-offset: 2px;
 }
 
-.app { display: flex; flex-direction: column; height: 100vh; }
+html, body { overflow-x: hidden; }
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* fallback for browsers without dvh */
+  height: 100dvh; /* mobile browsers resize their chrome (address bar) as you
+                     scroll, so a fixed 100vh either clips the composer below
+                     the fold or leaves a gap; dvh tracks the real visible
+                     viewport instead. */
+}
 
 /* -------------------------------------------------------------- header -- */
 
@@ -62,6 +71,7 @@ body {
   background: var(--ink);
   color: var(--paper);
   border-bottom: 3px solid var(--amber);
+  flex-shrink: 0; /* never let the flex column squeeze the header */
 }
 .brand {
   display: flex;
@@ -378,6 +388,7 @@ body {
   justify-content: center;
   background: var(--paper);
   border-top: 2px solid var(--ink);
+  flex-shrink: 0; /* never let the flex column squeeze the composer offscreen */
 }
 .composer-inner {
   display: flex;
@@ -475,12 +486,29 @@ body {
 /* ----------------------------------------------------------- responsive - */
 
 @media (max-width: 600px) {
-  .app-header { flex-wrap: wrap; gap: 12px; padding: 12px 16px; }
-  .tabs { margin-left: 0; }
+  /* The header was overflowing the viewport horizontally: .user-switcher
+     tried to sit beside .brand on one row, and a native <select> sizes
+     itself by its OWN content (the longest option text) rather than by its
+     flex container, so it pushed past the screen edge no matter how the
+     header wrapped. Fix: give the switcher its own full-width row and let
+     the select fill it, instead of relying on wrap + shrink alone. */
+  .app-header { flex-wrap: wrap; align-items: stretch; gap: 10px; padding: 12px 16px; }
+  .brand { flex: 1 1 100%; }
+  .user-switcher {
+    flex: 1 1 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .user-switcher select { width: 100%; max-width: 100%; }
+  .tabs { flex: 1 1 100%; margin-left: 0; }
+  .tabs button { flex: 1; text-align: center; }
+
   .messages { padding: 18px 12px; }
   .bubble.assistant { padding: 18px 16px 14px; }
   .answer-text { padding-right: 0; padding-bottom: 46px; }
   .confidence-badge { top: auto; bottom: 14px; right: 16px; font-size: 0.8rem; }
   .tool-step { flex-wrap: wrap; }
   .tool-step-args { min-width: 100%; order: 3; }
+  .composer-inner { padding: 14px 12px; }
 }
